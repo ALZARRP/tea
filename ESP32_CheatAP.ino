@@ -7,7 +7,10 @@
 #include <ESPmDNS.h>
 #include <ArduinoOTA.h>
 #include "time.h"
-#include <AsyncElegantOTA.h> // Using the async version, even if deprecated
+
+// This directive MUST be placed before the ElegantOTA include
+#define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
+#include <ElegantOTA.h>
 
 // --- Display Configuration for CYD (Cheap Yellow Display) ---
 #define TFT_MODULE_ST7789
@@ -143,39 +146,37 @@ const char index_html[] PROGMEM = R"rawliteral(
       color: #333 !important; box-shadow: none !important;
     }
     .stealth .profile-avatar, .stealth .status-indicator { display: none; }
+    .secure-mode .vendor-text { display: none; }
+    .guest-mode .cheat-item input, .guest-mode .cheat-item button { pointer-events: none; opacity: 0.5; }
   </style>
 </head>
 <body>
   <div id="loader"></div>
   <div class="container" id="mainContainer">
-    <section id="loginView" class="view active"><h1 data-lang-key="login_title">CYBERNET LOGIN</h1><input type="text" id="user" placeholder="Username" autocomplete="username"><div class="password-container"><input type="password" id="pass" placeholder="Password" autocomplete="current-password"><span id="passToggle" class="password-toggle">👁️</span></div><div><input type="checkbox" id="rememberMe" style="width:auto;margin:0 10px 0 0;"><label for="rememberMe">Remember Me</label></div><button id="loginBtn" data-lang-key="login_btn">ACCESS</button><button id="whatsNewBtn" class="back-button" style="margin-top:0;">What's New?</button></section>
-    <section id="selectionView" class="view"><div class="header-bar"><div id="statusIndicator" class="status-indicator"></div><div id="clock" class="clock"></div><div id="themeSelectorContainer"></div></div><div class="profile"><div class="profile-avatar"></div><div id="profileName" class="profile-name">Guest</div><div id="lastLogin" class="last-login"></div></div><h2 data-lang-key="game_select_title">SELECT GAME</h2><div class="game-list"></div><div class="settings-grid"><label for="profileColor">Name Color:</label><input type="color" id="profileColor"><label for="uiScale">UI Scale:</label><input type="range" id="uiScale" min="80" max="120" value="100"></div><div class="flex-row" style="margin-top:10px;"><button id="systemBtn" class="back-button" style="width:33%;margin:0;">SYSTEM</button><button id="wifiBtn" class="back-button" style="width:33%;margin:0;">WIFI</button><button id="profileBtn" class="back-button" style="width:33%;margin:0;">PROFILE</button></div><button id="addCheatNavBtn" class="back-button" style="margin-top:5px;">ADD CUSTOM CHEAT</button><button id="logoutBtn" class="back-button">LOG OUT</button></section>
-    <section id="cheatView" class="view"><h2>GAME CHEATS</h2><div style="display:flex;gap:10px;margin-bottom:10px;"><input type="text" id="cheatSearch" placeholder="Search cheats..." style="margin:0;width:70%;"><select id="cheatViewToggle" style="margin:0;width:30%;"><option value="compact">Compact</option><option value="expanded">Expanded</option></select></div><div class="cheat-list-container" id="cheatListContainer"><div id="cheatList"></div></div><div id="cheatPresets" class="flex-row"></div><button id="panicBtn" class="panic-button">PANIC</button><button id="backToSelectionBtn" class="back-button">BACK</button><div id="console-container"></div></section>
+    <section id="loginView" class="view active"><h1 class="vendor-text">VENDOR.ME LOGIN</h1><input type="text" id="user" placeholder="Username" autocomplete="username"><div class="password-container"><input type="password" id="pass" placeholder="Password" autocomplete="current-password"><span id="passToggle" class="password-toggle">👁️</span></div><div><input type="checkbox" id="rememberMe" style="width:auto;margin:0 10px 0 0;"><label for="rememberMe">Remember Me</label></div><div class="flex-row"><button id="loginBtn">ACCESS</button><button id="guestLoginBtn">GUEST</button></div></section>
+    <section id="selectionView" class="view"><div class="header-bar"><div id="statusIndicator" class="status-indicator"></div><div id="clock" class="clock"></div></div><div class="profile"><div class="profile-avatar"></div><div id="profileName" class="profile-name">Guest</div></div><h2>SELECT GAME</h2><div class="game-list"></div><div class="flex-row" style="margin-top:10px;"><button id="systemBtn" class="back-button" style="width:33%;margin:0;">SYSTEM</button><button id="wifiBtn" class="back-button" style="width:33%;margin:0;">WIFI</button><button id="profileBtn" class="back-button" style="width:33%;margin:0;">PROFILE</button></div><button id="addCheatNavBtn" class="back-button" style="margin-top:5px;">ADD CUSTOM CHEAT</button><button id="logoutBtn" class="back-button">LOG OUT</button></section>
+    <section id="cheatView" class="view"><h2 id="gameTitle">GAME CHEATS</h2><div style="display:flex;gap:10px;margin-bottom:10px;"><input type="text" id="cheatSearch" placeholder="Search cheats..." style="margin:0;width:70%;"><select id="cheatViewToggle" style="margin:0;width:30%;"><option value="compact">Compact</option><option value="expanded">Expanded</option></select></div><div class="cheat-list-container" id="cheatListContainer"><div id="cheatList"></div></div><button id="panicBtn" class="panic-button">PANIC</button><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
     <section id="systemView" class="view"><h2>SYSTEM & OTA</h2><div id="systemStats" style="font-family:var(--font-body);flex-grow:1;white-space:pre-wrap;">Loading...</div><a href="/update" target="_blank"><button>OTA FIRMWARE UPDATE</button></a><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
     <section id="wifiView" class="view"><h2>WIFI SETTINGS</h2><p>Connect device to a local network.</p><input type="text" id="wifiSSID" placeholder="WiFi SSID"><input type="password" id="wifiPass" placeholder="WiFi Password"><button id="saveWifiBtn">SAVE & RESTART</button><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
-    <section id="profileView" class="view"><h2>PROFILE & SETTINGS</h2><div id="profileSettingsContent" style="font-family:var(--font-body);flex-grow:1;overflow-y:auto;padding-right:5px;"><h3 data-lang-key="lang_title">Language</h3><select id="languageSelector"></select><hr><h3 data-lang-key="theme_editor_title">Theme Editor</h3><div id="themeEditor" class="settings-grid"></div><button id="saveThemeBtn" data-lang-key="save_theme_btn">Save Custom Theme</button><hr><h3 data-lang-key="change_pass_title">Change Password</h3><input type="password" id="oldPass" placeholder="Old Password"><input type="password" id="newPass" placeholder="New Password"><button id="changePassBtn" data-lang-key="change_pass_btn">Change Password</button></div><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
-    <section id="customCheatView" class="view"><h2>ADD CUSTOM CHEAT</h2><div style="flex-grow:1;overflow-y:auto;"><input type="text" id="customCheatName" placeholder="Cheat Name"><select id="customCheatType"><option value="toggle">Toggle</option><option value="slider">Slider</option></select><input type="text" id="customCheatCategory" placeholder="Category"><textarea id="customCheatDesc" placeholder="Description" style="height:60px;"></textarea><button id="saveCustomCheatBtn">SAVE CHEAT</button></div><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
+    <section id="profileView" class="view"><h2>PROFILE & SETTINGS</h2><div style="flex-grow:1;overflow-y:auto;padding-right:5px;"><h3>Language</h3><select id="languageSelector"></select><hr><h3>Theme Editor</h3><div id="themeEditor" class="settings-grid"></div><button id="saveThemeBtn">Save Custom Theme</button><hr><h3>Change Password</h3><input type="password" id="oldPass" placeholder="Old Password"><input type="password" id="newPass" placeholder="New Password"><button id="changePassBtn">Change</button><hr><h3>Secure Mode</h3><label class="toggle-switch"><input type="checkbox" id="secureModeToggle"><span class="slider-switch"></span></label></div><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
+    <section id="customCheatView" class="view"><h2>ADD CUSTOM CHEAT</h2><div style="flex-grow:1;overflow-y:auto;"><input type="text" id="customCheatName" placeholder="Cheat Name"><select id="customCheatType"><option value="toggle">Toggle</option></select><input type="text" id="customCheatCategory" placeholder="Category"><textarea id="customCheatDesc" placeholder="Description" style="height:60px;"></textarea><button id="saveCustomCheatBtn">SAVE CHEAT</button></div><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
   </div>
   <script>
     const games = {
       custom: { name: "Custom Cheats", theme: "theme-matrix", cheats: [] },
-      r6: { name: "Rainbow Six Siege", theme: "theme-classic", cheats: [{ id: "aimbot", label: "Aimbot", type: "toggle", category: "Combat", desc: "Advanced aim assistance." },{ id: "esp", label: "Wall ESP", type: "toggle", category: "Visuals", desc: "See players through walls." }] },
-      minecraft: { name: "Minecraft", theme: "theme-matrix", cheats: [{ id: "xray", label: "X-Ray Vision", type: "toggle", category: "Visuals", desc: "See ores through blocks." },{ id: "fly", label: "Fly Mode", type: "toggle", category: "Movement", desc: "Enables flying." }] }
+      r6: { name: "Rainbow Six Siege", cheats: [{ id: "aimbot", label: "Aimbot"},{ id: "esp", label: "Wall ESP"}] },
+      minecraft: { name: "Minecraft", cheats: [{ id: "xray", label: "X-Ray Vision"},{ id: "fly", label: "Fly Mode"}] }
     };
-    let currentUser = null, currentGameKey = null, cheatStates = {}, websocket, favoriteCheats = {}, inactivityimer;
-    const $ = (s) => document.querySelector(s), $$ = (s) => document.querySelectorAll(s);
+    let currentUser = null, currentGameKey = null, cheatStates = {}, websocket;
+    const $ = (s) => document.querySelector(s);
     const elements = {
-        loader: $('#loader'), mainContainer: $('#mainContainer'), loginView: $('#loginView'),
-        selectionView: $('#selectionView'), cheatView: $('#cheatView'), systemView: $('#systemView'),
-        wifiView: $('#wifiView'), profileView: $('#profileView'), customCheatView: $('#customCheatView'),
+        mainContainer: $('#mainContainer'), loginView: $('#loginView'), selectionView: $('#selectionView'),
+        cheatView: $('#cheatView'), systemView: $('#systemView'), wifiView: $('#wifiView'),
+        profileView: $('#profileView'), customCheatView: $('#customCheatView'),
         profileName: $('#profileName'), logoutBtn: $('#logoutBtn')
     };
-    function showAlert(message, type = 'beep', notify = false) {
-        $('#alertBox').textContent = message; $('#alertBox').style.opacity = '1';
-        setTimeout(() => { $('#alertBox').style.opacity = '0'; }, 2500);
-        if(notify && Notification.permission === "granted") new Notification('VENDOR.ME Alert', { body: message });
-    }
-    function switchView(toView) { $$('.view').forEach(v => v.classList.remove('active')); toView.classList.add('active'); }
+    function showAlert(msg, type='beep') { console.log(msg); }
+    function switchView(toView) { document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); toView.classList.add('active'); }
     function sendMessage(msg) { websocket.send(JSON.stringify(msg)); }
     function setupWebSocket() {
         websocket = new WebSocket(`ws://${window.location.hostname}/ws`);
@@ -183,11 +184,11 @@ const char index_html[] PROGMEM = R"rawliteral(
         websocket.onclose = () => { $('#statusIndicator').classList.remove('connected'); setTimeout(setupWebSocket, 2000); };
         websocket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if(data.type === 'loginResponse'){
-                elements.loader.style.display = 'none';
+            if(data.type === 'loginResponse' || data.type === 'guestLogin'){
                 if(data.success){
                     currentUser = data.user; elements.profileName.textContent = currentUser;
-                    switchView(elements.selectionView); showAlert(`Welcome, ${currentUser}`, 'success', true);
+                    elements.mainContainer.classList.toggle('guest-mode', data.type === 'guestLogin');
+                    switchView(elements.selectionView); showAlert(`Welcome, ${currentUser}`, 'success');
                 } else { showAlert("Login Failed: " + data.message, "error"); }
             } else if (data.type === 'customCheatsList') {
                 games.custom.cheats = data.cheats;
@@ -205,8 +206,8 @@ const char index_html[] PROGMEM = R"rawliteral(
     }
     function selectGame(gameKey) {
         currentGameKey = gameKey;
-        document.body.className = games[gameKey].theme || 'theme-cyberpunk';
-        $('#gameTitle').textContent = games[gameKey].name + " CHEATS";
+        document.body.className = games[gameKey].theme || 'theme-classic';
+        $('#gameTitle').textContent = games[gameKey].name;
         buildCheatList(); switchView(elements.cheatView);
     }
     function buildCheatList() {
@@ -217,13 +218,14 @@ const char index_html[] PROGMEM = R"rawliteral(
             const toggle = document.createElement("label"); toggle.className = 'toggle-switch';
             const input = document.createElement("input"); input.type = "checkbox";
             input.onchange = () => sendMessage({type: 'setCheat', cheatId: cheat.id, value: input.checked});
-            toggle.append(input, document.createElement('span'));
+            toggle.append(input, Object.assign(document.createElement('span'), {className:'slider-switch'}));
             item.append(label, toggle); list.appendChild(item);
         });
     }
     window.onload = () => {
         setupWebSocket();
         $('#loginBtn').onclick = () => sendMessage({type: 'login', user: $('#user').value, pass: $('#pass').value});
+        $('#guestLoginBtn').onclick = () => sendMessage({type: 'guestLogin'});
         elements.logoutBtn.onclick = () => { currentUser = null; switchView(elements.loginView); };
         $('#systemBtn').onclick = () => switchView(elements.systemView);
         $('#wifiBtn').onclick = () => switchView(elements.wifiView);
@@ -231,16 +233,12 @@ const char index_html[] PROGMEM = R"rawliteral(
         $('#addCheatNavBtn').onclick = () => switchView(elements.customCheatView);
         $('#saveWifiBtn').onclick = () => sendMessage({type:'setWifi', ssid:$('#wifiSSID').value, pass:$('#wifiPass').value});
         $('#saveCustomCheatBtn').onclick = () => {
-            const cheat = {
-                id: 'c_' + Date.now(), label: $('#customCheatName').value, type: $('#customCheatType').value,
-                category: $('#customCheatCategory').value, desc: $('#customCheatDesc').value
-            };
+            const cheat = { id: 'c_' + Date.now(), label: $('#customCheatName').value, type: $('#customCheatType').value, category: $('#customCheatCategory').value, desc: $('#customCheatDesc').value };
             sendMessage({type: 'saveCustomCheat', cheat: cheat});
             showAlert('Custom cheat saved!', 'success'); switchView(elements.selectionView);
         };
-        document.querySelectorAll('.back-button').forEach(b => {
-            if(!b.onclick) b.onclick = () => switchView(elements.selectionView);
-        });
+        $('#secureModeToggle').onchange = (e) => elements.mainContainer.classList.toggle('secure-mode', e.target.checked);
+        document.querySelectorAll('.back-button').forEach(b => { if(!b.onclick) b.onclick = () => switchView(elements.selectionView); });
         if(Notification.permission !== 'granted') Notification.requestPermission();
     };
   </script>
@@ -248,10 +246,38 @@ const char index_html[] PROGMEM = R"rawliteral(
 </html>
 )rawliteral";
 
+void handleSerialCommand(String cmd) {
+    if (cmd == "help") {
+        Serial.println("Available commands: help, reboot, clear_wifi, clear_cheats");
+    } else if (cmd == "reboot") {
+        Serial.println("Rebooting...");
+        ESP.restart();
+    } else if (cmd == "clear_wifi") {
+        preferences.begin("wifi-creds", false);
+        preferences.clear();
+        preferences.end();
+        Serial.println("WiFi credentials cleared. Rebooting.");
+        ESP.restart();
+    } else if (cmd == "clear_cheats") {
+        preferences.begin("custom-cheats", false);
+        preferences.clear();
+        preferences.end();
+        Serial.println("Custom cheats cleared.");
+    } else {
+        Serial.println("Unknown command. Type 'help' for a list of commands.");
+    }
+}
+
 void handleWebSocketMessage(AsyncWebSocketClient *client, char *data) {
+    static std::map<uint32_t, unsigned long> lastMessageTime;
+    if (lastMessageTime.count(client->id()) && (millis() - lastMessageTime[client->id()] < 100)) { // Rate limit: 10 msg/sec
+        return;
+    }
+    lastMessageTime[client->id()] = millis();
+
   StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, data);
-  if (error) { Serial.print(F("deserializeJson() failed: ")); Serial.println(error.f_str()); return; }
+  if (error) { return; }
   const char* type = doc["type"];
 
   if (strcmp(type, "login") == 0) {
@@ -260,6 +286,8 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, char *data) {
     } else {
       client->text("{\"type\":\"loginResponse\",\"success\":false,\"message\":\"Invalid credentials\"}");
     }
+  } else if (strcmp(type, "guestLogin") == 0) {
+    client->text("{\"type\":\"loginResponse\",\"success\":true,\"user\":\"Guest\"}");
   } else if (strcmp(type, "setWifi") == 0) {
     preferences.begin("wifi-creds", false);
     preferences.putString("ssid", doc["ssid"].as<String>());
@@ -289,10 +317,8 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, char *data) {
 void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
     Serial.printf("Client #%u connected\n", client->id());
-    updateDisplayInfo("AP Mode Active", WiFi.softAPIP().toString().c_str(), ws.count());
   } else if (type == WS_EVT_DISCONNECT) {
     Serial.printf("Client #%u disconnected\n", client->id());
-    updateDisplayInfo("AP Mode Active", WiFi.softAPIP().toString().c_str(), ws.count());
   } else if (type == WS_EVT_DATA) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
@@ -303,7 +329,7 @@ void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, Aw
 }
 
 void setupDisplay() { tft.init(); tft.setRotation(1); pinMode(TFT_BL, OUTPUT); digitalWrite(TFT_BL, HIGH); }
-void updateDisplayInfo(const char* status, const char* ip, int clients) { /* ... same as before ... */ }
+void updateDisplayInfo(const char* status, const char* ip, int clients) { /* ... */ }
 
 void setup() {
   Serial.begin(115200);
@@ -317,20 +343,16 @@ void setup() {
   WiFi.mode(WIFI_AP_STA);
   if (sta_ssid.length() > 0) {
     WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
-    if (WiFi.waitForConnectResult(10000) == WL_CONNECTED) {
-      updateDisplayInfo("STA Mode", WiFi.localIP().toString().c_str(), 0);
-      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-    } else {
+    if (WiFi.waitForConnectResult(10000) != WL_CONNECTED) {
       WiFi.mode(WIFI_AP);
-      updateDisplayInfo("AP Mode", WiFi.softAPIP().toString().c_str(), 0);
     }
   } else {
     WiFi.softAP(ap_ssid, ap_password);
-    updateDisplayInfo("AP Mode", WiFi.softAPIP().toString().c_str(), 0);
   }
 
   if (MDNS.begin("vendor")) { Serial.println("MDNS responder started"); }
-  AsyncElegantOTA.begin(&server);
+
+  ElegantOTA.begin(&server);
 
   ws.onEvent(onWebSocketEvent);
   server.addHandler(&ws);
@@ -341,5 +363,10 @@ void setup() {
 void loop() {
   ws.cleanupClients();
   ArduinoOTA.handle();
-  // System stats sending can be added back here if desired
+  ElegantOTA.loop();
+  if (Serial.available() > 0) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    handleSerialCommand(cmd);
+  }
 }
