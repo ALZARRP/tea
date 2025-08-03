@@ -7,7 +7,7 @@
 #include <ESPmDNS.h>
 #include <ArduinoOTA.h>
 #include "time.h"
-#include <AsyncElegantOTA.h>
+#include <ElegantOTA.h> // Corrected OTA library
 
 // --- Display Configuration for CYD (Cheap Yellow Display) ---
 #define TFT_MODULE_ST7789
@@ -330,7 +330,7 @@ void setup() {
   }
 
   if (MDNS.begin("vendor")) { Serial.println("MDNS responder started"); }
-  AsyncElegantOTA.begin(&server);
+  ElegantOTA.begin(&server);
 
   ws.onEvent(onWebSocketEvent);
   server.addHandler(&ws);
@@ -341,5 +341,6 @@ void setup() {
 void loop() {
   ws.cleanupClients();
   ArduinoOTA.handle();
+  ElegantOTA.loop();
   // System stats sending can be added back here if desired
 }
