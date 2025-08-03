@@ -7,6 +7,7 @@
 #include <ESPmDNS.h>
 #include <ArduinoOTA.h>
 #include "time.h"
+#include <map> // For rate-limiting map
 
 // This directive MUST be placed before the ElegantOTA include
 #define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
@@ -40,6 +41,7 @@ const int   daylightOffset_sec = 3600;
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 Preferences preferences;
+std::map<uint32_t, unsigned long> lastMessageTime; // For rate-limiting
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -269,11 +271,10 @@ void handleSerialCommand(String cmd) {
 }
 
 void handleWebSocketMessage(AsyncWebSocketClient *client, char *data) {
-    static std::map<uint32_t, unsigned long> lastMessageTime;
-    if (lastMessageTime.count(client->id()) && (millis() - lastMessageTime[client->id()] < 100)) { // Rate limit: 10 msg/sec
-        return;
-    }
-    lastMessageTime[client->id()] = millis();
+  if (lastMessageTime.count(client->id()) && (millis() - lastMessageTime[client->id()] < 100)) { // Rate limit: 10 msg/sec
+      return;
+  }
+  lastMessageTime[client->id()] = millis();
 
   StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, data);
@@ -316,8 +317,10 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, char *data) {
 
 void onWebSocketEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
+    lastMessageTime[client->id()] = 0;
     Serial.printf("Client #%u connected\n", client->id());
   } else if (type == WS_EVT_DISCONNECT) {
+    lastMessageTime.erase(client->id());
     Serial.printf("Client #%u disconnected\n", client->id());
   } else if (type == WS_EVT_DATA) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
@@ -362,7 +365,6 @@ void setup() {
 
 void loop() {
   ws.cleanupClients();
-  ArduinoOTA.handle();
   ElegantOTA.loop();
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
