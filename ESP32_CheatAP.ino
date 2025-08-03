@@ -185,6 +185,7 @@ void updateCydDisplay() {
     String ip_addr = (WiFi.getMode() == WIFI_AP) ? WiFi.softAPIP().toString() : WiFi.localIP().toString();
     tft.drawString("IP: " + ip_addr, 5, 10);
     tft.drawString("Clients: " + String(ws.count()), 5, 30);
+    activeCheatCount = (cheats.aimbot_active ? 1 : 0) + (cheats.esp_active ? 1 : 0) + (cheats.no_recoil ? 1 : 0);
     tft.drawString("Active Cheats: " + String(activeCheatCount), 5, 50);
     tft.drawString("Game: " + currentGame, 5, 70);
 }
@@ -199,7 +200,10 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, char *data) {
         const char* cheatId = doc["cheatId"];
         if (strcmp(cheatId, "aimbot_active") == 0) cheats.aimbot_active = doc["value"];
         else if (strcmp(cheatId, "esp_active") == 0) cheats.esp_active = doc["value"];
-        // ... handle all other cheats
+        else if (strcmp(cheatId, "no_recoil") == 0) cheats.no_recoil = doc["value"];
+        else if (strcmp(cheatId, "aimbot_fov") == 0) cheats.aimbot_fov = doc["value"];
+        else if (strcmp(cheatId, "aimbot_smooth") == 0) cheats.aimbot_smooth = doc["value"];
+        else if (strcmp(cheatId, "recoil_percent") == 0) cheats.recoil_percent = doc["value"];
     } else if (strcmp(type, "selectGame") == 0) {
         currentGame = doc["game"].as<String>();
     }
