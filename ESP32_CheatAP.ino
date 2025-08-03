@@ -7,11 +7,7 @@
 #include <ESPmDNS.h>
 #include <ArduinoOTA.h>
 #include "time.h"
-#include <map> // For rate-limiting map
-
-// This directive MUST be placed before the ElegantOTA include
-#define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
-#include <ElegantOTA.h>
+#include <map>
 
 // --- Display Configuration for CYD (Cheap Yellow Display) ---
 #define TFT_MODULE_ST7789
@@ -41,7 +37,7 @@ const int   daylightOffset_sec = 3600;
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 Preferences preferences;
-std::map<uint32_t, unsigned long> lastMessageTime; // For rate-limiting
+std::map<uint32_t, unsigned long> lastMessageTime;
 
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -158,7 +154,7 @@ const char index_html[] PROGMEM = R"rawliteral(
     <section id="loginView" class="view active"><h1 class="vendor-text">VENDOR.ME LOGIN</h1><input type="text" id="user" placeholder="Username" autocomplete="username"><div class="password-container"><input type="password" id="pass" placeholder="Password" autocomplete="current-password"><span id="passToggle" class="password-toggle">👁️</span></div><div><input type="checkbox" id="rememberMe" style="width:auto;margin:0 10px 0 0;"><label for="rememberMe">Remember Me</label></div><div class="flex-row"><button id="loginBtn">ACCESS</button><button id="guestLoginBtn">GUEST</button></div></section>
     <section id="selectionView" class="view"><div class="header-bar"><div id="statusIndicator" class="status-indicator"></div><div id="clock" class="clock"></div></div><div class="profile"><div class="profile-avatar"></div><div id="profileName" class="profile-name">Guest</div></div><h2>SELECT GAME</h2><div class="game-list"></div><div class="flex-row" style="margin-top:10px;"><button id="systemBtn" class="back-button" style="width:33%;margin:0;">SYSTEM</button><button id="wifiBtn" class="back-button" style="width:33%;margin:0;">WIFI</button><button id="profileBtn" class="back-button" style="width:33%;margin:0;">PROFILE</button></div><button id="addCheatNavBtn" class="back-button" style="margin-top:5px;">ADD CUSTOM CHEAT</button><button id="logoutBtn" class="back-button">LOG OUT</button></section>
     <section id="cheatView" class="view"><h2 id="gameTitle">GAME CHEATS</h2><div style="display:flex;gap:10px;margin-bottom:10px;"><input type="text" id="cheatSearch" placeholder="Search cheats..." style="margin:0;width:70%;"><select id="cheatViewToggle" style="margin:0;width:30%;"><option value="compact">Compact</option><option value="expanded">Expanded</option></select></div><div class="cheat-list-container" id="cheatListContainer"><div id="cheatList"></div></div><button id="panicBtn" class="panic-button">PANIC</button><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
-    <section id="systemView" class="view"><h2>SYSTEM & OTA</h2><div id="systemStats" style="font-family:var(--font-body);flex-grow:1;white-space:pre-wrap;">Loading...</div><a href="/update" target="_blank"><button>OTA FIRMWARE UPDATE</button></a><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
+    <section id="systemView" class="view"><h2>SYSTEM INFO</h2><div id="systemStats" style="font-family:var(--font-body);flex-grow:1;white-space:pre-wrap;">Loading...</div><p style="font-size:0.8rem;text-align:center;">Update via Arduino IDE (Network Port)</p><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
     <section id="wifiView" class="view"><h2>WIFI SETTINGS</h2><p>Connect device to a local network.</p><input type="text" id="wifiSSID" placeholder="WiFi SSID"><input type="password" id="wifiPass" placeholder="WiFi Password"><button id="saveWifiBtn">SAVE & RESTART</button><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
     <section id="profileView" class="view"><h2>PROFILE & SETTINGS</h2><div style="flex-grow:1;overflow-y:auto;padding-right:5px;"><h3>Language</h3><select id="languageSelector"></select><hr><h3>Theme Editor</h3><div id="themeEditor" class="settings-grid"></div><button id="saveThemeBtn">Save Custom Theme</button><hr><h3>Change Password</h3><input type="password" id="oldPass" placeholder="Old Password"><input type="password" id="newPass" placeholder="New Password"><button id="changePassBtn">Change</button><hr><h3>Secure Mode</h3><label class="toggle-switch"><input type="checkbox" id="secureModeToggle"><span class="slider-switch"></span></label></div><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
     <section id="customCheatView" class="view"><h2>ADD CUSTOM CHEAT</h2><div style="flex-grow:1;overflow-y:auto;"><input type="text" id="customCheatName" placeholder="Cheat Name"><select id="customCheatType"><option value="toggle">Toggle</option></select><input type="text" id="customCheatCategory" placeholder="Category"><textarea id="customCheatDesc" placeholder="Description" style="height:60px;"></textarea><button id="saveCustomCheatBtn">SAVE CHEAT</button></div><button class="back-button" onclick="switchView(elements.selectionView)">BACK</button></section>
@@ -271,10 +267,10 @@ void handleSerialCommand(String cmd) {
 }
 
 void handleWebSocketMessage(AsyncWebSocketClient *client, char *data) {
-  if (lastMessageTime.count(client->id()) && (millis() - lastMessageTime[client->id()] < 100)) { // Rate limit: 10 msg/sec
-      return;
-  }
-  lastMessageTime[client->id()] = millis();
+    if (lastMessageTime.count(client->id()) && (millis() - lastMessageTime[client->id()] < 100)) { // Rate limit: 10 msg/sec
+        return;
+    }
+    lastMessageTime[client->id()] = millis();
 
   StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, data);
@@ -355,7 +351,7 @@ void setup() {
 
   if (MDNS.begin("vendor")) { Serial.println("MDNS responder started"); }
 
-  ElegantOTA.begin(&server);
+  // ElegantOTA.begin(&server); // Removed to prevent linking errors
 
   ws.onEvent(onWebSocketEvent);
   server.addHandler(&ws);
@@ -365,7 +361,8 @@ void setup() {
 
 void loop() {
   ws.cleanupClients();
-  ElegantOTA.loop();
+  ArduinoOTA.handle();
+  // ElegantOTA.loop();
   if (Serial.available() > 0) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
