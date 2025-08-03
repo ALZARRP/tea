@@ -1,5 +1,5 @@
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
+#include <ESPAsyncWebServer.hh>
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include <ArduinoJson.h>
@@ -7,7 +7,7 @@
 #include <ESPmDNS.h>
 #include <ArduinoOTA.h>
 #include "time.h"
-#include <ElegantOTA.h> // Corrected OTA library
+#include <AsyncElegantOTA.h> // Using the async version, even if deprecated
 
 // --- Display Configuration for CYD (Cheap Yellow Display) ---
 #define TFT_MODULE_ST7789
@@ -330,7 +330,7 @@ void setup() {
   }
 
   if (MDNS.begin("vendor")) { Serial.println("MDNS responder started"); }
-  ElegantOTA.begin(&server);
+  AsyncElegantOTA.begin(&server);
 
   ws.onEvent(onWebSocketEvent);
   server.addHandler(&ws);
@@ -341,6 +341,5 @@ void setup() {
 void loop() {
   ws.cleanupClients();
   ArduinoOTA.handle();
-  ElegantOTA.loop();
   // System stats sending can be added back here if desired
 }
