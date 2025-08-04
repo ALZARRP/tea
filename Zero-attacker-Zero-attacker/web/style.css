@@ -1,0 +1,337 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;700&display=swap');
+
+/* --- CSS Variables --- */
+:root {
+    --neon-glow: #00ffff;
+    --bg-color: #00001a;
+    --text-color: #00ffff;
+    --container-bg: rgba(10, 10, 30, 0.8);
+    --border-color: rgba(0, 255, 255, 0.5);
+    --font-main: 'Roboto', sans-serif;
+    --font-title: 'Orbitron', sans-serif;
+}
+
+/* --- General Styles --- */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-main);
+    background: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        rgba(0, 20, 40, 0.8),
+        rgba(0, 10, 20, 0.9)
+    ), url('https://i.imgur.com/Pijv2cM.gif');
+    background-blend-mode: overlay;
+    z-index: -1;
+    animation: background-pan 30s linear infinite;
+}
+
+@keyframes background-pan {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 15px;
+    backdrop-filter: blur(10px);
+}
+
+h1, h2, h3 {
+    font-family: var(--font-title);
+    text-align: center;
+    color: var(--neon-glow);
+    text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-glow), 0 0 15px var(--neon-glow);
+}
+
+/* --- View Management --- */
+.view {
+    display: none;
+}
+.view.active {
+    display: flex;
+    flex-direction: column;
+    height: 95vh;
+}
+
+/* --- Game Selection --- */
+#game-selection {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+}
+
+.game-card {
+    background: var(--container-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    width: 45%;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.game-card:hover {
+    border-color: var(--neon-glow);
+    box-shadow: 0 0 15px var(--neon-glow);
+    transform: translateY(-5px);
+}
+
+/* --- Main Cheat Layout --- */
+.main-layout {
+    display: flex;
+    gap: 20px;
+    flex-grow: 1;
+    overflow-y: hidden;
+}
+
+.cheat-container {
+    width: 70%;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding-right: 10px;
+}
+
+.sidebar {
+    width: 30%;
+}
+
+/* --- Cheat Styles --- */
+.cheat-category {
+    background: var(--container-bg);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.cheat-item {
+    margin-bottom: 15px;
+    position: relative;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.cheat-item.active {
+    background-color: rgba(0, 255, 255, 0.1);
+}
+
+.cheat-item label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.cheat-item .tooltip {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.cheat-item:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* --- Form Elements --- */
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 10px;
+    font-size: 1.1rem;
+    font-family: var(--font-main);
+    color: #000;
+    background: var(--neon-glow);
+    border: 2px solid var(--neon-glow);
+    border-radius: 15px;
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--neon-glow);
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background: #000;
+    color: var(--neon-glow);
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-color);
+}
+
+/* --- Alert & Notifications --- */
+#alert-container {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+
+.alert {
+    padding: 10px 20px;
+    background: var(--neon-glow);
+    color: #000;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    animation: fadeOut 3s forwards;
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* --- Sidebar Components --- */
+#radar {
+    width: 200px;
+    height: 200px;
+    background: #000;
+    border: 2px solid var(--neon-glow);
+    border-radius: 50%;
+    margin: 20px auto;
+    position: relative;
+}
+
+.blip {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background: red;
+    border-radius: 50%;
+}
+
+/* --- Toggle Switch --- */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.ios-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.ios-slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .ios-slider {
+    background-color: var(--neon-glow);
+}
+
+input:checked + .ios-slider:before {
+    transform: translateX(26px);
+}
+
+/* --- Range Slider --- */
+input[type=range] {
+    width: 100%;
+    -webkit-appearance: none;
+    background: #333;
+    height: 5px;
+    border-radius: 5px;
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--neon-glow);
+    cursor: pointer;
+    border-radius: 50%;
+}
+
+/* --- Console Log --- */
+#console-container {
+    margin-top: 20px;
+    background: var(--container-bg);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+#console-log {
+    height: 150px;
+    overflow-y: auto;
+    background: #000;
+    padding: 10px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    border-radius: 5px;
+}
+
+.console-line {
+    margin-bottom: 5px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.console-line.error {
+    color: #ff4444;
+}
+
+.console-line.success {
+    color: #00ff88;
+}
+
+.console-line.info {
+    color: #88aaff;
+}

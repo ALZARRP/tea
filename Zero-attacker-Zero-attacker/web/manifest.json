@@ -1,0 +1,21 @@
+{
+  "name": "V.E.N.D.O.R Cheat Menu",
+  "short_name": "VENDOR",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#00001a",
+  "theme_color": "#00ffff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/2aP5p52.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://i.imgur.com/2aP5p52.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

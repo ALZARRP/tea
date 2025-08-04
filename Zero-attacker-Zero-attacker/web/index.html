@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" /><title>VENDOR.ME NEON</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="https://i.imgur.com/2aP5p52.png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <div id="alert-container"></div>
+    <div class="container">
+        <section id="loginView" class="view active"><h1>V.E.N.D.O.R</h1><input id="user" placeholder="Username"><input id="pass" type="password" placeholder="Password"><button id="loginBtn">Connect</button></section>
+        <section id="selectionView" class="view"><h1>SELECT DEPLOYMENT</h1><div id="game-selection"></div></section>
+        <section id="cheatView" class="view">
+            <h2 id="gameTitle"></h2>
+            <div class="main-layout">
+                <div id="cheat-container"></div>
+                <div class="sidebar">
+                    <div id="radar"></div>
+                    <h3>Lobby</h3>
+                    <div id="player-lobby"></div>
+                    <div id="console-container">
+                        <h3>CONSOLE LOG</h3>
+                        <div id="console-log"></div>
+                    </div>
+                </div>
+            </div>
+            <button id="backToSelectionBtn">Disconnect</button>
+        </section>
+    </div>
+    <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
